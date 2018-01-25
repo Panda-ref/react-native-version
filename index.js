@@ -292,7 +292,7 @@ function version(program, projectPath) {
 									{
 										CFBundleVersion: `${programOpts.resetBuild
 											? typeof semverVersion.release === "string"
-												? semverVersion.release + 1
+												? parseInt(semverVersion.release, 10) + 1
 												: 1
 											: parseInt(json.CFBundleVersion, 10) + 1}`
 									}
