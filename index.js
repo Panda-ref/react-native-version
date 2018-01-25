@@ -11,6 +11,7 @@ const pSettle = require("p-settle");
 const stripIndents = require("common-tags/lib/stripIndents");
 const unique = require("lodash.uniq");
 const Xcode = require("pbxproj-dom/xcode").Xcode;
+const semverUtils = require("semver-utils");
 
 /**
  * Custom type definition for Promises
@@ -81,9 +82,11 @@ function version(program, projectPath) {
 	const appPkgJSONPath = path.join(projPath, "package.json");
 	const MISSING_RN_DEP = "MISSING_RN_DEP";
 	var appPkg;
+	var semverVersion;
 
 	try {
 		appPkg = require(appPkgJSONPath);
+		semverVersion = semverUtils.parse(appPkg.version);
 
 		if (!appPkg.dependencies["react-native"]) {
 			throw new Error(MISSING_RN_DEP);
@@ -148,7 +151,7 @@ function version(program, projectPath) {
 			if (!programOpts.incrementBuild) {
 				gradleFile = gradleFile.replace(
 					/versionName "(.*)"/,
-					'versionName "' + appPkg.version + '"'
+					'versionName "' + semverVersion.version + '"'
 				);
 			}
 
@@ -217,7 +220,7 @@ function version(program, projectPath) {
 				if (!programOpts.incrementBuild) {
 					child.spawnSync(
 						"agvtool",
-						["new-marketing-version", appPkg.version],
+						["new-marketing-version", semverVersion.version],
 						agvtoolOpts
 					);
 				}
@@ -283,12 +286,14 @@ function version(program, projectPath) {
 									json,
 									!programOpts.incrementBuild
 										? {
-												CFBundleShortVersionString: appPkg.version
+												CFBundleShortVersionString: semverVersion.version
 											}
 										: {},
 									{
 										CFBundleVersion: `${programOpts.resetBuild
-											? 1
+											? typeof semverVersion.release === "string"
+												? semverVersion.release + 1
+												: 1
 											: parseInt(json.CFBundleVersion, 10) + 1}`
 									}
 								)
